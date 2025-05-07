@@ -4,7 +4,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import pytz
-from ta.trend import  EMAIndicator, MACD
+from ta.trend import EMAIndicator, MACD
 from ta.momentum import RSIIndicator
 from ta.volatility import BollingerBands
 from sklearn.tree import DecisionTreeClassifier
@@ -49,7 +49,7 @@ ANALYSIS_INTERVAL_MINUTES = int(os.environ.get("ANALYSIS_INTERVAL_MINUTES", 15))
 logger = logging.LoggerAdapter(logger, {"timeframe": WORKER_TIMEFRAME})
 
 # Definição de ativos (pode ser movido para config ou env vars se complexo)
- ativos =   {
+ativos = {
     "Câmbio (Forex)": ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X"],
     "Criptomoedas": ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD"],
     "Ações": ["AAPL", "MSFT", "AMZN", "PETR4.SA", "VALE3.SA"],
@@ -65,7 +65,7 @@ def enviar_telegram(mensagem):
     logger.info(f"[TELEGRAM] Tentando enviar mensagem...")
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     # Adiciona o Timeframe à mensagem
-     mensagem_com_tf =  f"[{WORKER_TIMEFRAME}] {mensagem}"
+    mensagem_com_tf = f"[{WORKER_TIMEFRAME}] {mensagem}"
     data = {"chat_id": TELEGRAM_CHAT_ID, "text": mensagem_com_tf}
     try:
         response = requests.post(url, data=data, timeout=20)
@@ -201,7 +201,7 @@ def analisar(df, ativo, mercado, stop_dev, take_dev):
             "Entrada": round(entrada, 5),
             "Stop": round(stop, 5),
             "Alvo": round(alvo, 5),
-            "Mensagem": mensagem_base  # Salva a mensagem base
+            "Mensagem": mensagem_base # Salva a mensagem base
         }
         logger.info(f"[ANALISAR] Sinal gerado para {ativo}: {tipo}")
         return sinal_info
@@ -211,88 +211,88 @@ def analisar(df, ativo, mercado, stop_dev, take_dev):
 
 # --- Funções para Análise em Background ---
 def analisar_ativo(ativo, mercado, timeframe, stop_dev, take_dev):
-    logger.info(f"[BG_ATIVO] Iniciando análise para  {ativo} ({mercado})")
+    logger.info(f"[BG_ATIVO] Iniciando análise para {ativo} ({mercado})")
     df = obter_dados(ativo, timeframe)
     if df is not None:
-          sinal_info =   analisar(df, ativo, mercado, stop_dev, take_dev)
-        if  sinal_info:
-             logger.info(f"[BG_ATIVO] Sinal encontrado para  {ativo}.")
+        sinal_info = analisar(df, ativo, mercado, stop_dev, take_dev)
+        if sinal_info:
+             logger.info(f"[BG_ATIVO] Sinal encontrado para {ativo}.")
         else:
-             logger.info(f"[BG_ATIVO] Nenhum sinal encontrado para  {ativo}.")
-        return  sinal_info
+             logger.info(f"[BG_ATIVO] Nenhum sinal encontrado para {ativo}.")
+        return sinal_info
     else:
-        logger.warning(f"[BG_ATIVO] Falha ao obter dados para  {ativo}. Pulando análise.")
+        logger.warning(f"[BG_ATIVO] Falha ao obter dados para {ativo}. Pulando análise.")
         return None
 
 # <<< MODIFICADO: Esta função agora só processa um mercado por vez >>>
 def analisar_um_mercado(ativos_dict, mercado_nome, timeframe, stop_dev, take_dev):
- Logger. info(f) "[BG_MERCADO] Iniciando análise para mercado: {mercado_nome}") "[BG_MERCADO] Iniciando análise para mercado: {mercado_nome}")  info(f) "[BG_MERCADO] Iniciando análise para mercado: {mercado_nome}") "[BG_MERCADO] Iniciando análise para mercado: {mercado_nome}")  
+    logger.info(f"[BG_MERCADO] Iniciando análise para mercado: {mercado_nome}")
 
- lista_ativos_para_analisar = ativos_dict. get(mercado_nome,  [])
+    lista_ativos_para_analisar = ativos_dict.get(mercado_nome, [])
 
-     if not lista_ativos_para_analisar: 
- Logger. warning(f"[BG_MERCADO] Nenhum ativo encontrado para o mercado:  {mercado_nome}") "[BG_MERCADO] Nenhum ativo encontrado para o mercado: {mercado_nome}") 
+    if not lista_ativos_para_analisar:
+        logger.warning(f"[BG_MERCADO] Nenhum ativo encontrado para o mercado: {mercado_nome}")
         return
 
-         sinais_mercado =     0 0 
-      for     ativo     in lista_ativos_para_analisar:  for     ativo     in lista_ativos_para_analisar: 
-  Logger. info(    f"[BG_MERCADO] Processando ativo:      {ativo}") "[BG_MERCADO] Processando ativo: {ativo}")  info(    f"[BG_MERCADO] Processando ativo:      {ativo}") "[BG_MERCADO] Processando ativo: {ativo}") 
+    sinais_mercado = 0
+    for ativo in lista_ativos_para_analisar:
+        logger.info(f"[BG_MERCADO] Processando ativo: {ativo}")
         try:
-  sinal = analisar_ativo(ativo, mercado_nome, timeframe, stop_dev, take_dev)  analisar_ativo(ativo, mercado_nome, timeframe, stop_dev, take_dev) 
-              if     sinal:      if     sinal:     
-                        sinais_mercado +=       1 1  1 1 
+            sinal = analisar_ativo(ativo, mercado_nome, timeframe, stop_dev, take_dev)
+            if sinal:
+                sinais_mercado += 1
                 try:
-                          # Envia a mensagem base, o TF será adicionado pela função de envio     # Envia a mensagem base, o TF será adicionado pela função de envio      
-                      enviar_telegram(sinal["Mensagem"]) "Mensagem"])  enviar_telegram(sinal["Mensagem"]) "Mensagem"]) 
-  Logger. info(    f"[BG_MERCADO] Notificação enviada para      {ativo}.") "[BG_MERCADO] Notificação enviada para {ativo}.")  info(    f"[BG_MERCADO] Notificação enviada para      {ativo}.") "[BG_MERCADO] Notificação enviada para {ativo}.") 
+                    # Envia a mensagem base, o TF será adicionado pela função de envio
+                    enviar_telegram(sinal["Mensagem"])
+                    logger.info(f"[BG_MERCADO] Notificação enviada para {ativo}.")
                 except Exception as e_telegram:
-  Logger. error(    f"[BG_MERCADO] Erro ao tentar enviar notificação para      {ativo}: {e_telegram}") "[BG_MERCADO] Erro ao tentar enviar notificação para {ativo}: {e_telegram}")  error(    f"[BG_MERCADO] Erro ao tentar enviar notificação para      {ativo}: {e_telegram}") "[BG_MERCADO] Erro ao tentar enviar notificação para {ativo}: {e_telegram}") 
-                  # Pausa curta entre ativos para evitar sobrecarga da API yfinance     # Pausa curta entre ativos para evitar sobrecarga da API yfinance      
-  Tempo. sleep(5)     # Aumentado um pouco 5) # Aumentado um pouco     sleep(5)   # Aumentado um pouco 5) # Aumentado um pouco     
+                    logger.error(f"[BG_MERCADO] Erro ao tentar enviar notificação para {ativo}: {e_telegram}")
+            # Pausa curta entre ativos para evitar sobrecarga da API yfinance
+            time.sleep(5) # Aumentado um pouco
         except Exception as e_ativo:
-  Logger. error(    f"[BG_MERCADO] Erro ao processar ativo      {ativo}: {e_ativo}\n{traceback.format_exc()}") "[BG_MERCADO] Erro ao processar ativo {ativo}: {e_ativo}\n{traceback.format_exc()}")  error(    f"[BG_MERCADO] Erro ao processar ativo      {ativo}: {e_ativo}\n{traceback.format_exc()}") "[BG_MERCADO] Erro ao processar ativo {ativo}: {e_ativo}\n{traceback.format_exc()}") 
- Tempo. Sleep(5) sleep(5)
+             logger.error(f"[BG_MERCADO] Erro ao processar ativo {ativo}: {e_ativo}\n{traceback.format_exc()}")
+             time.sleep(5)
 
-  Logger. info(      f"[BG_MERCADO] Análise concluída para        {mercado_nome}. {sinais_mercado}        sinais gerados."      ) "[BG_MERCADO] Análise concluída para {mercado_nome}. {sinais_mercado} sinais gerados.")  info(f"[BG_MERCADO] Análise concluída para  {mercado_nome}. {sinais_mercado}  sinais gerados.") "[BG_MERCADO] Análise concluída para {mercado_nome}. {sinais_mercado} sinais gerados.")  info(      f"[BG_MERCADO] Análise concluída para        {mercado_nome}. {sinais_mercado}        sinais gerados."      ) "[BG_MERCADO] Análise concluída para {mercado_nome}. {sinais_mercado} sinais gerados.")  info(f"[BG_MERCADO] Análise concluída para  {mercado_nome}. {sinais_mercado}  sinais gerados.") "[BG_MERCADO] Análise concluída para {mercado_nome}. {sinais_mercado} sinais gerados.") 
+    logger.info(f"[BG_MERCADO] Análise concluída para {mercado_nome}. {sinais_mercado} sinais gerados.")
 
 # <<< MODIFICADO: Loop principal agora itera por todos os mercados >>>
-defdef loop_automatico(defativos_dict, prazo, stop_dev, take_dev, tempo_espera_minutosloop_automatico(ativos_dict, prazo, stop_dev, take_dev, tempo_espera_minutos):):loop_automatico(ativos_dict, timeframe, stop_dev, take_dev, tempo_espera_minutos):
-  Logger. info(f"[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe}      | Intervalo Ciclo:      {tempo_espera_minutos} min") "[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe} | Intervalo Ciclo: {tempo_espera_minutos} min")  info(f"[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe}  | Intervalo Ciclo:  {tempo_espera_minutos} min") "[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe} | Intervalo Ciclo: {tempo_espera_minutos} min")  info(f"[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe}      | Intervalo Ciclo:      {tempo_espera_minutos} min") "[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe} | Intervalo Ciclo: {tempo_espera_minutos} min")  info(f"[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe}  | Intervalo Ciclo:  {tempo_espera_minutos} min") "[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe} | Intervalo Ciclo: {tempo_espera_minutos} min") 
-      Tente:      try: try:
-      Embora verdadeiro:      while True: while True:
-               logger.info("[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ") "[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ")  info("[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ") "[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ")  info("[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ") "[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ")  info("[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ") "[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ") 
- ciclo_inicio_tempo = tempo.tempo() time()
+def loop_automatico(ativos_dict, timeframe, stop_dev, take_dev, tempo_espera_minutos):
+    logger.info(f"[AGENDADOR] ***** WORKER INICIADO ***** Timeframe: {timeframe} | Intervalo Ciclo: {tempo_espera_minutos} min")
+    try:
+        while True:
+            logger.info("[AGENDADOR] --- Iniciando novo ciclo de análise (todos os mercados) --- ")
+            ciclo_inicio_tempo = time.time()
 
-                       # Itera por cada mercado definido no dicionário   # Itera por cada mercado definido no dicionário        # Itera por cada mercado definido no dicionário   # Itera por cada mercado definido no dicionário        
-               for       nome_mercado       in ativos_dict.keys():  for       nome_mercado       in ativos_dict.keys():  for       nome_mercado       in ativos_dict.keys():  for       nome_mercado       in ativos_dict.keys(): 
-                   logger.info(     f"[AGENDADOR] Chamando análise para o mercado:       {nome_mercado}...") "[AGENDADOR] Chamando análise para o mercado: {nome_mercado}...")  info(f"[AGENDADOR] Chamando análise para o mercado:  {nome_mercado}...") "[AGENDADOR] Chamando análise para o mercado: {nome_mercado}...")  info(     f"[AGENDADOR] Chamando análise para o mercado:       {nome_mercado}...") "[AGENDADOR] Chamando análise para o mercado: {nome_mercado}...")  info(f"[AGENDADOR] Chamando análise para o mercado:  {nome_mercado}...") "[AGENDADOR] Chamando análise para o mercado: {nome_mercado}...") 
-       Tente:      try: try:
-                        analisar_um_mercado(ativos_dict, nome_mercado, timeframe, stop_dev, take_dev)   analisar_um_mercado(ativos_dict, nome_mercado, timeframe, stop_dev, take_dev)   analisar_um_mercado(ativos_dict, nome_mercado, timeframe, stop_dev, take_dev)   analisar_um_mercado(ativos_dict, nome_mercado, timeframe, stop_dev, take_dev)  
-       exceto Exceção como e_analise_mercado:      except Exception as       e_analise_mercado:      except Exception as       e_analise_mercado:     
-                       logger.error(     f"[AGENDADOR] Erro DENTRO da análise do mercado       {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}") "[AGENDADOR] Erro DENTRO da análise do mercado {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}")  error(f"[AGENDADOR] Erro DENTRO da análise do mercado  {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}") "[AGENDADOR] Erro DENTRO da análise do mercado {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}")  error(     f"[AGENDADOR] Erro DENTRO da análise do mercado       {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}") "[AGENDADOR] Erro DENTRO da análise do mercado {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}")  error(f"[AGENDADOR] Erro DENTRO da análise do mercado  {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}") "[AGENDADOR] Erro DENTRO da análise do mercado {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}") 
-                    logger.info(     f"[AGENDADOR] Análise do mercado       {nome_mercado}       concluída."     )  "[AGENDADOR] Análise do mercado {nome_mercado} concluída.")   info(f"[AGENDADOR] Análise do mercado  {nome_mercado}  concluída.")  "[AGENDADOR] Análise do mercado {nome_mercado} concluída.")   info(     f"[AGENDADOR] Análise do mercado       {nome_mercado}       concluída."     )  "[AGENDADOR] Análise do mercado {nome_mercado} concluída.")   info(f"[AGENDADOR] Análise do mercado  {nome_mercado}  concluída.")  "[AGENDADOR] Análise do mercado {nome_mercado} concluída.")  
-                   time.sleep(10)       # Pausa entre mercados  10) # Pausa entre mercados   sleep(10) # Pausa entre mercados  10) # Pausa entre mercados        sleep(10)      # Pausa entre mercados  10) # Pausa entre mercados   sleep(10) # Pausa entre mercados  10) # Pausa entre mercados         
+            # Itera por cada mercado definido no dicionário 'ativos'
+            for nome_mercado in ativos_dict.keys():
+                logger.info(f"[AGENDADOR] Chamando análise para o mercado: {nome_mercado}...")
+                try:
+                    analisar_um_mercado(ativos_dict, nome_mercado, timeframe, stop_dev, take_dev)
+                except Exception as e_analise_mercado:
+                    logger.error(f"[AGENDADOR] Erro DENTRO da análise do mercado {nome_mercado}: {e_analise_mercado}\n{traceback.format_exc()}")
+                logger.info(f"[AGENDADOR] Análise do mercado {nome_mercado} concluída.")
+                time.sleep(10) # Pausa entre mercados
 
-                  ciclo_fim_tempo = time.time()     time()     time()     time()    
- Duraçao_Ciclo = ciclo_fim_tempo - ciclo_inicio_tempo 
-                 logger.info(     f"[AGENDADOR] Ciclo completo (todos os mercados) concluído em       {duracao_ciclo:.2f} segundos.")   "[AGENDADOR] Ciclo completo (todos os mercados) concluído em {duracao_ciclo:.2f} segundos.")    info(f"[AGENDADOR] Ciclo completo (todos os mercados) concluído em  {duracao_ciclo:.2f} segundos.")   "[AGENDADOR] Ciclo completo (todos os mercados) concluído em {duracao_ciclo:.2f} segundos.")    info(     f"[AGENDADOR] Ciclo completo (todos os mercados) concluído em       {duracao_ciclo:.2f} segundos.")   "[AGENDADOR] Ciclo completo (todos os mercados) concluído em {duracao_ciclo:.2f} segundos.")    info(f"[AGENDADOR] Ciclo completo (todos os mercados) concluído em  {duracao_ciclo:.2f} segundos.")   "[AGENDADOR] Ciclo completo (todos os mercados) concluído em {duracao_ciclo:.2f} segundos.")   
+            ciclo_fim_tempo = time.time()
+            duracao_ciclo = ciclo_fim_tempo - ciclo_inicio_tempo
+            logger.info(f"[AGENDADOR] Ciclo completo (todos os mercados) concluído em {duracao_ciclo:.2f} segundos.")
 
-                         # Calcula o tempo de espera restante para completar o intervalo definido     # Calcula o tempo de espera restante para completar o intervalo definido            # Calcula o tempo de espera restante para completar o intervalo definido     # Calcula o tempo de espera restante para completar o intervalo definido          
-   tempo_espera_segundos = max(0, (     tempo_espera_minutos *       60) - duracao_ciclo) 0, (     tempo_espera_minutos *       60) - duracao_ciclo)  max(0, (     tempo_espera_minutos *       60) - duracao_ciclo) 0, (     tempo_espera_minutos *       60) - duracao_ciclo)  max(0, (     tempo_espera_minutos *       60) - duracao_ciclo) 0, (     tempo_espera_minutos *       60) - duracao_ciclo)  max(0, (     tempo_espera_minutos *       60) - duracao_ciclo) 0, (     tempo_espera_minutos *       60) - duracao_ciclo) 
-                 logger.info(      f"[AGENDADOR] Aguardando       {tempo_espera_segundos:.2f}       segundos para o próximo ciclo..."      )   "[AGENDADOR] Aguardando {tempo_espera_segundos:.2f} segundos para o próximo ciclo...")    info(f"[AGENDADOR] Aguardando  {tempo_espera_segundos:.2f}  segundos para o próximo ciclo...")   "[AGENDADOR] Aguardando {tempo_espera_segundos:.2f} segundos para o próximo ciclo...")    info(     f"[AGENDADOR] Aguardando       {tempo_espera_segundos:.2f}       segundos para o próximo ciclo..."     )   "[AGENDADOR] Aguardando {tempo_espera_segundos:.2f} segundos para o próximo ciclo...")    info(f"[AGENDADOR] Aguardando  {tempo_espera_segundos:.2f}  segundos para o próximo ciclo...")   "[AGENDADOR] Aguardando {tempo_espera_segundos:.2f} segundos para o próximo ciclo...")   
- Time.sleep (tempo_espera_segundos) sleep (tempo_espera_segundos) 
+            # Calcula o tempo de espera restante para completar o intervalo definido
+            tempo_espera_segundos = max(0, (tempo_espera_minutos * 60) - duracao_ciclo)
+            logger.info(f"[AGENDADOR] Aguardando {tempo_espera_segundos:.2f} segundos para o próximo ciclo...")
+            time.sleep(tempo_espera_segundos)
 
-        Exceto exceção como e_loop:        
-    logger.error(     f"[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!:       {e_loop}\n{traceback.format_exc()}")  "[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!: {e_loop}\n{traceback.format_exc()}")   error(f"[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!:  {e_loop}\n{traceback.format_exc()}")  "[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!: {e_loop}\n{traceback.format_exc()}")   error(     f"[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!:       {e_loop}\n{traceback.format_exc()}")  "[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!: {e_loop}\n{traceback.format_exc()}")   error(f"[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!:  {e_loop}\n{traceback.format_exc()}")  "[AGENDADOR]!!!!! ERRO FATAL NO LOOP PRINCIPAL DO TRABALHADOR!!!!!: {e_loop}\n{traceback.format_exc()}")  
-        Finalmente:        
-    logger.critical("[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")  "[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")   critical("[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")  "[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")   critical("[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")  "[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")   critical("[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")  "[AGENDADOR]!!!!! TRABALHADOR ENCERRADO INESPERADAMENTE!!!!!")  
+    except Exception as e_loop:
+        logger.error(f"[AGENDADOR] !!!!! ERRO FATAL NO LOOP PRINCIPAL DO WORKER !!!!!: {e_loop}\n{traceback.format_exc()}")
+    finally:
+        logger.critical("[AGENDADOR] !!!!! WORKER ENCERRADO INESPERADAMENTE !!!!!")
 
-      Ver __Nome__ ==        
-   logger.info("[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...") "[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...")  info("[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...") "[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...")  info("[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...") "[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...")  info("[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...") "[MAIN] Iniciando Forex Alpha Signals Worker (Todos os Mercados)...") 
-                # Verifica se as  credenciais essenciais estão presentes    as  credenciais essenciais estão presentes     # Verifica se as  credenciais essenciais estão presentes    as  credenciais essenciais estão presentes           # Verifica se as  credenciais essenciais estão presentes    as  credenciais essenciais estão presentes     # Verifica se as  credenciais essenciais estão presentes    as  credenciais essenciais estão presentes         
-        se não TELEGRAM_TOKEN ou não TELEGRAM_CHAT_ID:        
-             logger.critical("[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")   "[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")    critical("[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")   "[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")    critical("[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")   "[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")    critical("[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")   "[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")   
- Mais: 
-                     # Inicia o loop principal diretamente, passando   as  configurações lidas   as  configurações lidas    # Inicia o loop principal diretamente, passando           # Inicia o loop principal diretamente, passando   as  configurações lidas   as  configurações lidas    # Inicia o loop principal diretamente, passando         
- loop_automatico(ativos, WORKER_TIMEFRAME, DEFAULT_STOP_DEV, DEFAULT_TAKE_DEV, ANALISE_INTERVAL_MINUTES) 
+if __name__ == "__main__":
+    logger.info("[MAIN] Iniciando Forex Alpha Signals Worker (All Markets)...")
+    # Verifica se as credenciais essenciais estão presentes
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        logger.critical("[MAIN] ERRO CRÍTICO: TELEGRAM_TOKEN ou TELEGRAM_CHAT_ID não definidos nas variáveis de ambiente. Encerrando.")
+    else:
+        # Inicia o loop principal diretamente, passando as configurações lidas
+        loop_automatico(ativos, WORKER_TIMEFRAME, DEFAULT_STOP_DEV, DEFAULT_TAKE_DEV, ANALYSIS_INTERVAL_MINUTES)
 
